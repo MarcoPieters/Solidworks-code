@@ -1,0 +1,171 @@
+' ******************************************************************************
+' C:\Users\Arpad\AppData\Local\Temp\swx13596\Macro1.swb - macro recorded on 10/22/18 by Arpad
+' ******************************************************************************
+'----------------------------------------------------
+
+'
+
+' Preconditions: Part or assembly document is open
+
+'                and contains a multibody part.
+
+'
+
+' Postconditions: None
+
+'
+' REF: http://help.solidworks.com/2013/english/api/sldworksapi/get_names_of_bodies_in_multibody_part_example_vb.htm
+                'swModel.FeatureManager.HideBodies
+              '  swModel.FeatureManager.ShowBodies
+
+
+'-----------------------------------------------------
+
+Dim swApp As Object
+
+Dim Part As Object
+Dim boolstatus As Boolean
+Dim longstatus As Long, longwarnings As Long
+
+Sub main()
+
+Dim swModel                     As SldWorks.ModelDoc2
+Dim swPart                      As SldWorks.PartDoc
+Dim vBody As Variant
+
+Set swApp = Application.SldWorks
+Set swModel = swApp.ActiveDoc
+Set swPart = swModel
+
+
+swModel.ClearSelection2 True
+
+Debug.Print "Start the STL Saver program"
+Debug.Print "File = " & swModel.GetPathName
+
+'longstatus = swModel.SaveAs3(Strings.Left(swModel.GetPathName, Strings.Len(swModel.GetPathName) - 7) & "_" & "teset" & ".STL", 0, 0)
+
+vBody = swPart.GetBodies2(swSolidBody, True)
+ 
+ SelectBodies swApp, swModel, vBody, ""
+
+ MsgBox ("Done saving STL")
+  Debug.Print "  END   "
+
+End Sub
+
+Sub SelectBodies(swApp As SldWorks.SldWorks, swModel As SldWorks.ModelDoc2, vBody As Variant, sPadStr As String)
+
+    Dim swModExt                    As SldWorks.ModelDocExtension
+
+    Dim swBody                      As SldWorks.Body2
+
+    Dim sBodySelStr                 As String
+
+    Dim sBodyTypeSelStr             As String
+
+    Dim i, j, k, TEMP               As Long
+
+    Dim bRet                        As Boolean
+    
+    Dim sFileName As String
+
+    If IsEmpty(vBody) Then Exit Sub
+
+    Set swModExt = swModel.Extension
+
+    'MsgBox "hide all now"
+    For i = 0 To UBound(vBody)
+        TEMP = i
+        SelectBody swApp, swModel, vBody, " ", TEMP
+        
+        swModel.FeatureManager.HideBodies
+        swModel.ClearSelection2 True
+        
+    Next i
+
+        
+    'MsgBox "select each one at a time  now"
+    Debug.Print "Start turning on bodies one at a time and save it!"
+    For i = 0 To UBound(vBody)
+        'Debug.Print "i= " & i
+        'Debug.Print "vBody " & UBound(vBody)
+        
+        TEMP = i
+        SelectBody swApp, swModel, vBody, " ", TEMP
+        
+        swModel.FeatureManager.ShowBodies
+        'MsgBox "selected" & sBodySelStr
+        Set swBody = vBody(i)
+        sBodySelStr = swBody.GetSelectionId
+        Debug.Print sBodySelStr
+        
+        sFileName = Strings.Left(swModel.GetPathName, Strings.Len(swModel.GetPathName) - 7) & "_" & sBodySelStr & ".STL"
+        Debug.Print sFileName
+        
+        longstatus = swModel.SaveAs3(sFileName, 0, 0)
+        
+        swModel.FeatureManager.HideBodies
+        swModel.ClearSelection2 True
+
+    Next i
+    
+    'show all
+    'MsgBox "show all now"
+    For i = 0 To UBound(vBody)
+    
+        TEMP = i
+        SelectBody swApp, swModel, vBody, " ", TEMP
+        swModel.FeatureManager.ShowBodies
+        swModel.ClearSelection2 True
+        
+    Next i
+
+End Sub
+
+Sub SelectBody(swApp As SldWorks.SldWorks, swModel As SldWorks.ModelDoc2, vBody As Variant, sPadStr As String, numberI As Long)
+
+    Dim swModExt                    As SldWorks.ModelDocExtension
+
+    Dim swBody                      As SldWorks.Body2
+
+    Dim sBodySelStr                 As String
+
+    Dim sBodyTypeSelStr             As String
+
+    Dim i, j, k                         As Long
+
+    Dim bRet                        As Boolean
+    
+    Dim sFileName As String
+
+    
+    If IsEmpty(vBody) Then Exit Sub
+
+    Set swModExt = swModel.Extension
+
+        Set swBody = vBody(numberI)
+        sBodySelStr = swBody.GetSelectionId
+        
+        Debug.Print "  SELECBODY: " & sPadStr & sBodySelStr
+        'MsgBox "selected body"
+        
+        Select Case swBody.GetType
+
+            Case swSolidBody
+                sBodyTypeSelStr = "SOLIDBODY"
+                
+            Case swSheetBody
+                sBodyTypeSelStr = "SURFACEBODY"
+
+            Case Else
+
+                Debug.Assert False
+        End Select
+        
+        bRet = swModExt.SelectByID2(sBodySelStr, sBodyTypeSelStr, 0#, 0#, 0#, True, 0, Nothing, swSelectOptionDefault): Debug.Assert bRet
+        
+    End Sub
+        
+
+       
